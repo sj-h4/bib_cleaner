@@ -115,7 +115,6 @@ def get_minimal_bib(master_bib, all_tags):
                     new_tags += [this_tag]
                     n_used_bibs += 1
             this_entry = ""
-            is_string_entry = False
         if add_flag:
             this_entry += line + "\n"
 
