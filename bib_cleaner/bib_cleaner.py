@@ -6,7 +6,7 @@ def tex_to_tags(tex_files):
     """Extract tags from TeX files.
 
     Given a list of TeX files, extract the citation tags which are contained in
-    ``\cite{}``. Split multiple citations (e.g. ``\cite{A, B}``) into
+    ``\cite{}``, ``\citet{}``, or ``\citep{}``. Split multiple citations (e.g. ``\cite{A, B}``) into
     individual tags (A, B).
 
     Parameters
@@ -36,8 +36,10 @@ def tex_to_tags(tex_files):
     for a_file in tex_files:
         with open(a_file, encoding="utf-8") as f:
             contents = f.read()
-        all_csv_tags += list(set(re.findall(r"\\cite{[A-Za-z0-9 ,\-_]+}", contents)))
-    all_csv_tags = [a_name[6:-1] for a_name in all_csv_tags]
+        # Match \cite{}, \citet{}, and \citep{}
+        matches = re.findall(r"\\(cite|citet|citep)\{([A-Za-z0-9 ,\-_]+)\}", contents)
+        all_csv_tags += [match[1] for match in matches]
+    all_csv_tags = list(set(all_csv_tags))
 
     all_tags = []
     for each_csv in all_csv_tags:
@@ -59,7 +61,7 @@ def get_minimal_bib(master_bib, all_tags):
         Name of master bibliography file which has all citations.
     all_tags : List[str]
         List of all tags from the TeX files. (where tags are the names that go
-        in `cite{}` commands in TeX files.)
+        in `cite{}`, `citet{}`, or `citep{}` commands in TeX files.)
 
     Returns
     -------
@@ -80,6 +82,7 @@ def get_minimal_bib(master_bib, all_tags):
     this_entry = ""
     new_lines = []
     new_tags = []
+    is_string_entry = False
 
     # Extract contents of master bib file
     with open(master_bib, encoding="utf-8") as f:
@@ -94,6 +97,8 @@ def get_minimal_bib(master_bib, all_tags):
         if line[0] == "@":
             add_flag = 1
             n_total_bibs += 1
+            # Check if this is a @string entry
+            is_string_entry = line.strip().startswith("@string")
             # Optionally use a regex
             # this_tag = re.findall(r"\{[\w-]+\,", line)
             # print(f"This line = {line}, tag = {this_tag[0][1:-1]}")
@@ -102,12 +107,15 @@ def get_minimal_bib(master_bib, all_tags):
             this_tag = line[start_ind + 1 : end_ind]
         if line[0] == "}":
             add_flag = 0
-            if this_tag in all_tags:
+            # Always include @string entries, or include if tag is in all_tags
+            if is_string_entry or this_tag in all_tags:
                 this_entry += "}\n"
                 new_lines += this_entry
-                new_tags += [this_tag]
-                n_used_bibs += 1
+                if not is_string_entry:
+                    new_tags += [this_tag]
+                    n_used_bibs += 1
             this_entry = ""
+            is_string_entry = False
         if add_flag:
             this_entry += line + "\n"
 
