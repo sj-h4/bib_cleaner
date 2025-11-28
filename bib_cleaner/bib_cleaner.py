@@ -99,12 +99,17 @@ def get_minimal_bib(master_bib, all_tags):
             n_total_bibs += 1
             # Check if this is a @string entry
             is_string_entry = line.strip().startswith("@string")
-            # Optionally use a regex
-            # this_tag = re.findall(r"\{[\w-]+\,", line)
-            # print(f"This line = {line}, tag = {this_tag[0][1:-1]}")
-            start_ind = line.find("{")
-            end_ind = line.find(",")
-            this_tag = line[start_ind + 1 : end_ind]
+            # Only extract tag for non-string entries
+            if not is_string_entry:
+                # Optionally use a regex
+                # this_tag = re.findall(r"\{[\w-]+\,", line)
+                # print(f"This line = {line}, tag = {this_tag[0][1:-1]}")
+                start_ind = line.find("{")
+                end_ind = line.find(",")
+                this_tag = line[start_ind + 1 : end_ind]
+            else:
+                # For @string entries, set a dummy tag (won't be used)
+                this_tag = ""
         if line[0] == "}":
             add_flag = 0
             # Always include @string entries, or include if tag is in all_tags
